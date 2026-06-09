@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — UPI Payments</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #f6f9fc; --surface: #fff; --border: #e3e8ef;
+      --text: #0d1b2a; --text-muted: #6b7c93; --text-light: #96a4b4;
+      --accent: #635bff; --accent-dark: #4f46e5; --accent-light: #ede9ff;
+      --success: #00a96e; --success-light: #d4f5e9;
+      --warning: #e6a817; --warning-light: #fef9ec;
+      --danger: #e5484d; --danger-light: #fff1f2;
+      --radius: 8px; --radius-lg: 12px;
+    }
+    body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); font-size: 14px; }
+
+    .login-wrap { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 2rem; }
+    .login-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); padding: 2.5rem; width: 100%; max-width: 380px; }
+    .login-card h1 { font-size: 18px; font-weight: 600; margin-bottom: 4px; }
+    .login-card p { font-size: 13px; color: var(--text-muted); margin-bottom: 1.5rem; }
+    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; }
+    input[type="password"], input[type="text"] {
+      width: 100%; padding: 10px 12px; border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 14px; font-family: inherit;
+      outline: none; transition: border-color 0.15s;
+    }
+    input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,91,255,0.12); }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      padding: 10px 16px; border-radius: var(--radius);
+      font-size: 13px; font-weight: 500; font-family: inherit;
+      cursor: pointer; transition: all 0.15s; border: 1px solid transparent;
+    }
+    .btn-primary { background: var(--accent); color: white; width: 100%; margin-top: 1rem; }
+    .btn-primary:hover { background: var(--accent-dark); }
+    .btn-sm { padding: 5px 12px; font-size: 12px; }
+    .btn-success { background: var(--success-light); color: #065f46; border-color: #a7f3d0; }
+    .btn-success:hover { background: #b2f5d8; }
+    .btn-danger { background: var(--danger-light); color: #991b1b; border-color: #fca5a5; }
+    .btn-danger:hover { background: #fee2e2; }
+
+    .app { display: none; }
+    .topbar {
+      background: var(--surface); border-bottom: 1px solid var(--border);
+      padding: 0 2rem; height: 56px;
+      display: flex; align-items: center; justify-content: space-between;
+      position: sticky; top: 0; z-index: 10;
+    }
+    .topbar-brand { font-size: 15px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+    .brand-dot { width: 24px; height: 24px; background: var(--accent); border-radius: 6px; display: flex; align-items: center; justify-content: center; }
+    .brand-dot svg { width: 14px; height: 14px; fill: white; }
+    .topbar-right { display: flex; align-items: center; gap: 1rem; }
+    .logout-btn { font-size: 13px; color: var(--text-muted); background: none; border: none; cursor: pointer; font-family: inherit; }
+    .logout-btn:hover { color: var(--text); }
+
+    .main { max-width: 1100px; margin: 0 auto; padding: 2rem; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 2rem; }
+    .stat-card {
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 1.25rem;
+    }
+    .stat-label { font-size: 12px; color: var(--text-muted); margin-bottom: 6px; }
+    .stat-value { font-size: 26px; font-weight: 600; letter-spacing: -0.5px; }
+
+    .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg); overflow: hidden; }
+    .table-header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .table-header h2 { font-size: 15px; font-weight: 600; }
+    .refresh-btn { font-size: 12px; color: var(--accent); background: none; border: none; cursor: pointer; font-family: inherit; font-weight: 500; }
+
+    table { width: 100%; border-collapse: collapse; }
+    th { font-size: 12px; font-weight: 500; color: var(--text-muted); text-align: left; padding: 10px 1.5rem; border-bottom: 1px solid var(--border); background: var(--bg); text-transform: uppercase; letter-spacing: 0.05em; }
+    td { padding: 12px 1.5rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #fafbfc; }
+
+    .badge {
+      display: inline-flex; align-items: center; gap: 5px;
+      padding: 3px 8px; border-radius: 20px; font-size: 11px; font-weight: 500;
+    }
+    .badge-pending { background: #f3f4f6; color: #6b7280; }
+    .badge-submitted { background: var(--warning-light); color: #7c5e10; }
+    .badge-confirmed { background: var(--success-light); color: #065f46; }
+    .badge-failed { background: var(--danger-light); color: #991b1b; }
+
+    .utr-mono { font-family: 'SFMono-Regular', Consolas, monospace; font-size: 12px; color: var(--text-muted); }
+    .amount-col { font-weight: 500; }
+    .actions { display: flex; gap: 6px; }
+
+    .empty-state { padding: 4rem; text-align: center; color: var(--text-muted); }
+    .empty-state p { margin-bottom: 6px; }
+
+    .toast {
+      position: fixed; bottom: 2rem; right: 2rem;
+      background: var(--text); color: white;
+      padding: 12px 20px; border-radius: var(--radius);
+      font-size: 13px; z-index: 100;
+      opacity: 0; transform: translateY(8px);
+      transition: all 0.2s; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Login -->
+<div class="login-wrap" id="loginScreen">
+  <div class="login-card">
+    <h1>Admin panel</h1>
+    <p>Enter your admin secret to continue</p>
+    <div>
+      <label for="secretInput">Admin secret</label>
+      <input type="password" id="secretInput" placeholder="Your ADMIN_SECRET" onkeydown="if(event.key==='Enter')login()">
+    </div>
+    <button class="btn btn-primary" onclick="login()">Sign in</button>
+    <p style="font-size:12px;color:var(--text-light);text-align:center;margin-top:1rem;" id="loginError"></p>
+  </div>
+</div>
+
+<!-- App -->
+<div class="app" id="app">
+  <div class="topbar">
+    <div class="topbar-brand">
+      <div class="brand-dot">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      UPI Payments Admin
+    </div>
+    <div class="topbar-right">
+      <button class="logout-btn" onclick="logout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="stats-grid" id="statsGrid">
+      <div class="stat-card"><p class="stat-label">Total payments</p><p class="stat-value" id="statTotal">—</p></div>
+      <div class="stat-card"><p class="stat-label">Confirmed</p><p class="stat-value" id="statConfirmed" style="color:var(--success)">—</p></div>
+      <div class="stat-card"><p class="stat-label">Awaiting review</p><p class="stat-value" id="statPending" style="color:var(--warning)">—</p></div>
+      <div class="stat-card"><p class="stat-label">Revenue confirmed</p><p class="stat-value" id="statRevenue">—</p></div>
+    </div>
+
+    <div class="table-card">
+      <div class="table-header">
+        <h2>All payments</h2>
+        <button class="refresh-btn" onclick="loadPayments()">↻ Refresh</button>
+      </div>
+      <div id="tableWrap">
+        <div class="empty-state"><p>Loading...</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let adminSecret = '';
+
+  function login() {
+    const val = document.getElementById('secretInput').value.trim();
+    if (!val) return;
+    adminSecret = val;
+    document.getElementById('loginScreen').style.display = 'none';
+    document.getElementById('app').style.display = 'block';
+    loadPayments();
+  }
+
+  function logout() {
+    adminSecret = '';
+    document.getElementById('loginScreen').style.display = 'flex';
+    document.getElementById('app').style.display = 'none';
+    document.getElementById('secretInput').value = '';
+  }
+
+  async function loadPayments() {
+    try {
+      const res = await fetch('/api/admin/payments', {
+        headers: { 'X-Admin-Secret': adminSecret },
+      });
+
+      if (res.status === 401) {
+        document.getElementById('loginError').textContent = 'Invalid secret. Try again.';
+        logout();
+        return;
+      }
+
+      const data = await res.json();
+      const payments = data.payments || [];
+
+      // Stats
+      const confirmed = payments.filter(p => p.status === 'confirmed');
+      const submitted = payments.filter(p => p.status === 'submitted');
+      const revenue = confirmed.reduce((sum, p) => sum + (p.amount || 0), 0);
+
+      document.getElementById('statTotal').textContent = payments.length;
+      document.getElementById('statConfirmed').textContent = confirmed.length;
+      document.getElementById('statPending').textContent = submitted.length;
+      document.getElementById('statRevenue').textContent = '₹' + revenue.toLocaleString('en-IN');
+
+      // Table
+      if (payments.length === 0) {
+        document.getElementById('tableWrap').innerHTML = '<div class="empty-state"><p>No payments yet.</p><p style="font-size:12px;">Payments will appear here once users start paying.</p></div>';
+        return;
+      }
+
+      const rows = payments.map(p => `
+        <tr>
+          <td style="font-size:12px;color:var(--text-muted);">${p.id}</td>
+          <td class="amount-col">₹${Number(p.amount).toLocaleString('en-IN')}</td>
+          <td>${p.note || '—'}</td>
+          <td><span class="utr-mono">${p.utr || '—'}</span></td>
+          <td><span class="badge badge-${p.status}">${p.status}</span></td>
+          <td style="font-size:12px;color:var(--text-muted);">${formatDate(p.created_at)}</td>
+          <td>
+            <div class="actions">
+              ${p.status === 'submitted' ? `
+                <button class="btn btn-sm btn-success" onclick="action('${p.id}','confirm')">Confirm</button>
+                <button class="btn btn-sm btn-danger" onclick="action('${p.id}','reject')">Reject</button>
+              ` : p.status === 'confirmed' ? '<span style="font-size:12px;color:var(--success);">✓ Done</span>' : '—'}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+
+      document.getElementById('tableWrap').innerHTML = `
+        <table>
+          <thead>
+            <tr>
+              <th>Payment ID</th>
+              <th>Amount</th>
+              <th>Note</th>
+              <th>UTR</th>
+              <th>Status</th>
+              <th>Date</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    } catch (e) {
+      showToast('Failed to load payments');
+    }
+  }
+
+  async function action(paymentId, type) {
+    try {
+      const res = await fetch('/api/admin/confirm', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'X-Admin-Secret': adminSecret },
+        body: JSON.stringify({ payment_id: paymentId, action: type }),
+      });
+      const data = await res.json();
+      if (data.status) {
+        showToast(type === 'confirm' ? 'Payment confirmed ✓' : 'Payment rejected');
+        loadPayments();
+      }
+    } catch (e) {
+      showToast('Action failed');
+    }
+  }
+
+  function formatDate(iso) {
+    if (!iso) return '—';
+    return new Date(iso).toLocaleString('en-IN', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' });
+  }
+
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 3000);
+  }
+
+  // Auto-refresh every 30s
+  setInterval(() => { if (adminSecret) loadPayments(); }, 30000);
+</script>
+</body>
+</html>

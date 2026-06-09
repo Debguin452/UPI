@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pay via UPI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #f6f9fc;
+      --surface: #ffffff;
+      --border: #e3e8ef;
+      --border-strong: #c5cfd9;
+      --text: #0d1b2a;
+      --text-muted: #6b7c93;
+      --text-light: #96a4b4;
+      --accent: #635bff;
+      --accent-dark: #4f46e5;
+      --accent-light: #ede9ff;
+      --success: #00a96e;
+      --success-light: #d4f5e9;
+      --warning: #e6a817;
+      --warning-light: #fef9ec;
+      --danger: #e5484d;
+      --radius: 8px;
+      --radius-lg: 12px;
+      --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
+      --shadow-md: 0 4px 12px rgba(0,0,0,0.08), 0 2px 4px rgba(0,0,0,0.04);
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+
+    .layout {
+      width: 100%;
+      max-width: 900px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      background: var(--surface);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-md);
+      overflow: hidden;
+    }
+
+    @media (max-width: 640px) {
+      .layout { grid-template-columns: 1fr; }
+      .left-panel { border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    .left-panel {
+      background: #0d1b2a;
+      padding: 2.5rem;
+      color: #e8edf2;
+      display: flex;
+      flex-direction: column;
+      gap: 2rem;
+    }
+
+    .brand { display: flex; align-items: center; gap: 10px; }
+    .brand-dot {
+      width: 32px; height: 32px;
+      background: var(--accent);
+      border-radius: 8px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .brand-dot svg { width: 18px; height: 18px; fill: white; }
+    .brand-name { font-size: 15px; font-weight: 600; color: #fff; }
+
+    .order-info { flex: 1; }
+    .order-label { font-size: 12px; color: #6b7c93; text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 6px; }
+    .order-amount { font-size: 40px; font-weight: 600; color: #fff; letter-spacing: -1px; margin-bottom: 6px; }
+    .order-note { font-size: 14px; color: #96a4b4; }
+
+    .upi-apps { display: flex; gap: 8px; flex-wrap: wrap; }
+    .upi-app-badge {
+      background: rgba(255,255,255,0.07);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 20px;
+      padding: 4px 10px;
+      font-size: 12px;
+      color: #96a4b4;
+    }
+
+    .secure-note {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; color: #6b7c93;
+    }
+    .secure-note svg { width: 14px; height: 14px; fill: #6b7c93; flex-shrink: 0; }
+
+    .right-panel { padding: 2.5rem; display: flex; flex-direction: column; gap: 1.5rem; }
+
+    .step-indicator {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 0.5rem;
+    }
+    .step-dot {
+      width: 24px; height: 24px;
+      border-radius: 50%;
+      background: var(--accent-light);
+      color: var(--accent);
+      font-size: 11px; font-weight: 600;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .step-dot.active { background: var(--accent); color: white; }
+    .step-dot.done { background: var(--success-light); color: var(--success); }
+    .step-line { flex: 1; height: 1px; background: var(--border); }
+    .step-label { font-size: 12px; color: var(--text-muted); }
+
+    .section-title { font-size: 15px; font-weight: 600; margin-bottom: 4px; }
+    .section-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 1rem; }
+
+    .qr-wrapper {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      padding: 1.5rem;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+    }
+    #qrcode canvas, #qrcode img { display: block; }
+
+    .upi-id-row {
+      display: flex; align-items: center; gap: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 10px 12px;
+    }
+    .upi-id-text { flex: 1; font-size: 13px; font-family: 'SFMono-Regular', Consolas, monospace; color: var(--text); }
+    .copy-btn {
+      background: none; border: 1px solid var(--border-strong);
+      border-radius: 6px; padding: 4px 10px;
+      font-size: 12px; font-family: inherit;
+      color: var(--text-muted); cursor: pointer;
+      transition: all 0.15s;
+    }
+    .copy-btn:hover { background: var(--bg); border-color: var(--accent); color: var(--accent); }
+
+    .or-divider {
+      display: flex; align-items: center; gap: 12px;
+      color: var(--text-light); font-size: 12px;
+    }
+    .or-divider::before, .or-divider::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .open-app-btn {
+      width: 100%; padding: 11px;
+      background: var(--accent-light);
+      color: var(--accent-dark);
+      border: 1px solid #c4b5fd;
+      border-radius: var(--radius);
+      font-size: 14px; font-weight: 500;
+      font-family: inherit; cursor: pointer;
+      transition: all 0.15s;
+    }
+    .open-app-btn:hover { background: #ddd6fe; }
+
+    label { display: block; font-size: 13px; font-weight: 500; margin-bottom: 6px; color: var(--text); }
+
+    input[type="text"] {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: 14px; font-family: inherit;
+      color: var(--text);
+      background: var(--surface);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    input[type="text"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(99,91,255,0.12); }
+    input[type="text"].error { border-color: var(--danger); box-shadow: 0 0 0 3px rgba(229,72,77,0.1); }
+
+    .input-hint { font-size: 12px; color: var(--text-light); margin-top: 5px; }
+    .input-error { font-size: 12px; color: var(--danger); margin-top: 5px; display: none; }
+
+    .confirm-btn {
+      width: 100%; padding: 13px;
+      background: var(--accent);
+      color: white;
+      border: none; border-radius: var(--radius);
+      font-size: 14px; font-weight: 600;
+      font-family: inherit; cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      letter-spacing: 0.01em;
+    }
+    .confirm-btn:hover { background: var(--accent-dark); }
+    .confirm-btn:active { transform: scale(0.99); }
+    .confirm-btn:disabled { background: var(--border-strong); cursor: not-allowed; transform: none; }
+
+    .status-card {
+      display: none;
+      padding: 14px 16px;
+      border-radius: var(--radius);
+      border: 1px solid;
+      font-size: 13px;
+      line-height: 1.5;
+    }
+    .status-card.submitted {
+      background: var(--warning-light);
+      border-color: #fcd34d;
+      color: #7c5e10;
+      display: block;
+    }
+    .status-card.confirmed {
+      background: var(--success-light);
+      border-color: #6ee7b7;
+      color: #065f46;
+      display: block;
+    }
+    .status-card.error {
+      background: #fff1f2;
+      border-color: #fca5a5;
+      color: #991b1b;
+      display: block;
+    }
+    .status-title { font-weight: 600; margin-bottom: 2px; }
+
+    .poll-indicator {
+      display: none; align-items: center; gap: 8px;
+      font-size: 12px; color: var(--text-muted);
+      margin-top: 0.5rem;
+    }
+    .poll-indicator.active { display: flex; }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .payment-id-note { font-size: 11px; color: var(--text-light); text-align: center; margin-top: 0.5rem; }
+
+    /* Screens */
+    #screen-pay { display: flex; flex-direction: column; gap: 1.25rem; }
+    #screen-submitted { display: none; flex-direction: column; gap: 1.25rem; }
+    #screen-confirmed { display: none; flex-direction: column; gap: 1.25rem; }
+  </style>
+</head>
+<body>
+
+<div class="layout">
+
+  <!-- Left: Order summary -->
+  <div class="left-panel">
+    <div class="brand">
+      <div class="brand-dot">
+        <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+      </div>
+      <span class="brand-name" id="payeeName">Loading...</span>
+    </div>
+
+    <div class="order-info">
+      <p class="order-label">Amount due</p>
+      <p class="order-amount" id="orderAmount">₹—</p>
+      <p class="order-note" id="orderNote">—</p>
+    </div>
+
+    <div>
+      <p class="order-label" style="margin-bottom:10px;">Accepted via</p>
+      <div class="upi-apps">
+        <span class="upi-app-badge">GPay</span>
+        <span class="upi-app-badge">PhonePe</span>
+        <span class="upi-app-badge">Paytm</span>
+        <span class="upi-app-badge">BHIM</span>
+        <span class="upi-app-badge">Any UPI app</span>
+      </div>
+    </div>
+
+    <div class="secure-note">
+      <svg viewBox="0 0 24 24"><path d="M12 2L4 6v6c0 5.5 3.8 10.7 8 12 4.2-1.3 8-6.5 8-12V6L12 2z"/></svg>
+      Payments processed securely via UPI
+    </div>
+  </div>
+
+  <!-- Right: Payment flow -->
+  <div class="right-panel">
+
+    <!-- Step indicator -->
+    <div class="step-indicator">
+      <div class="step-dot active" id="step1dot">1</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="step2dot">2</div>
+      <div class="step-line"></div>
+      <div class="step-dot" id="step3dot">✓</div>
+    </div>
+
+    <!-- SCREEN 1: Pay -->
+    <div id="screen-pay">
+      <div>
+        <p class="section-title">Scan & pay</p>
+        <p class="section-sub">Use any UPI app to scan the QR code below</p>
+      </div>
+
+      <div class="qr-wrapper">
+        <div id="qrcode"></div>
+        <p style="font-size:12px; color:var(--text-light);">Scan with GPay, PhonePe, Paytm or any UPI app</p>
+      </div>
+
+      <div>
+        <p style="font-size:12px; color:var(--text-muted); margin-bottom:6px;">Or pay to UPI ID directly</p>
+        <div class="upi-id-row">
+          <span class="upi-id-text" id="upiIdDisplay">—</span>
+          <button class="copy-btn" onclick="copyUPI()">Copy</button>
+        </div>
+      </div>
+
+      <div class="or-divider">or open in app</div>
+
+      <button class="open-app-btn" onclick="openInApp()">Open in UPI app →</button>
+
+      <div style="border-top: 1px solid var(--border); padding-top: 1.25rem;">
+        <p class="section-title">Paid? Enter your UTR</p>
+        <p class="section-sub">Every UPI payment has a 12-digit UTR number. Open your UPI app → transaction history → copy the UTR.</p>
+
+        <div style="margin-bottom:1rem;">
+          <label for="utrInput">UTR / Reference number</label>
+          <input type="text" id="utrInput" placeholder="e.g. 123456789012" maxlength="12" oninput="this.value=this.value.replace(/\D/g,'')">
+          <p class="input-hint">12-digit number shown in your UPI app after payment</p>
+          <p class="input-error" id="utrError">Please enter a valid 12-digit UTR number</p>
+        </div>
+
+        <button class="confirm-btn" id="confirmBtn" onclick="submitUTR()">Confirm payment</button>
+        <p class="payment-id-note" id="paymentIdNote"></p>
+      </div>
+    </div>
+
+    <!-- SCREEN 2: Submitted -->
+    <div id="screen-submitted">
+      <div>
+        <p class="section-title">Payment submitted ✓</p>
+        <p class="section-sub">Your UTR has been received. Confirmation usually takes a few minutes.</p>
+      </div>
+
+      <div class="status-card submitted" id="submittedCard">
+        <p class="status-title">Awaiting confirmation</p>
+        <p>UTR <strong id="submittedUTR"></strong> is under review.</p>
+      </div>
+
+      <div class="poll-indicator active" id="pollIndicator">
+        <div class="spinner"></div>
+        <span>Checking status automatically...</span>
+      </div>
+
+      <div class="status-card confirmed" id="confirmedCard" style="display:none;">
+        <p class="status-title">Payment confirmed ✓</p>
+        <p>Your payment has been verified successfully.</p>
+      </div>
+    </div>
+
+    <!-- SCREEN 3: Confirmed -->
+    <div id="screen-confirmed">
+      <div style="text-align:center; padding:2rem 0;">
+        <div style="width:56px;height:56px;background:var(--success-light);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 1rem;">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#00a96e" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>
+        <p style="font-size:20px;font-weight:600;margin-bottom:6px;">Payment confirmed!</p>
+        <p style="font-size:14px;color:var(--text-muted);">Thank you. Your payment has been verified.</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+  const params = new URLSearchParams(window.location.search);
+  const amount = params.get('amount') || '99';
+  const note = params.get('note') || 'Payment';
+  const redirect = params.get('redirect') || null;
+
+  let paymentId = null;
+  let upiUrl = null;
+  let upiId = null;
+  let pollTimer = null;
+
+  async function init() {
+    try {
+      const res = await fetch('/api/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ amount, note, buyer_name: 'Customer' }),
+      });
+      const data = await res.json();
+
+      paymentId = data.id;
+      upiUrl = data.upi_url;
+      upiId = data.upi_id;
+
+      document.getElementById('payeeName').textContent = data.payee_name || 'Pay';
+      document.getElementById('orderAmount').textContent = '₹' + Number(data.amount).toLocaleString('en-IN');
+      document.getElementById('orderNote').textContent = data.note;
+      document.getElementById('upiIdDisplay').textContent = data.upi_id;
+      document.getElementById('paymentIdNote').textContent = 'Payment ID: ' + paymentId;
+
+      new QRCode(document.getElementById('qrcode'), {
+        text: upiUrl,
+        width: 180,
+        height: 180,
+        colorDark: '#0d1b2a',
+        colorLight: '#ffffff',
+        correctLevel: QRCode.CorrectLevel.H,
+      });
+
+    } catch (e) {
+      document.getElementById('orderAmount').textContent = '₹' + amount;
+      document.getElementById('orderNote').textContent = note;
+    }
+  }
+
+  function copyUPI() {
+    navigator.clipboard.writeText(upiId || document.getElementById('upiIdDisplay').textContent);
+    const btn = document.querySelector('.copy-btn');
+    btn.textContent = 'Copied!';
+    setTimeout(() => btn.textContent = 'Copy', 2000);
+  }
+
+  function openInApp() {
+    if (upiUrl) window.location.href = upiUrl;
+  }
+
+  async function submitUTR() {
+    const utr = document.getElementById('utrInput').value.trim();
+    const errEl = document.getElementById('utrError');
+    const input = document.getElementById('utrInput');
+
+    if (!/^\d{12}$/.test(utr)) {
+      input.classList.add('error');
+      errEl.style.display = 'block';
+      return;
+    }
+    input.classList.remove('error');
+    errEl.style.display = 'none';
+
+    const btn = document.getElementById('confirmBtn');
+    btn.disabled = true;
+    btn.textContent = 'Submitting...';
+
+    try {
+      const res = await fetch('/api/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_id: paymentId, utr }),
+      });
+      const data = await res.json();
+
+      if (data.status === 'submitted' || data.status === 'confirmed') {
+        document.getElementById('screen-pay').style.display = 'none';
+        document.getElementById('screen-submitted').style.display = 'flex';
+        document.getElementById('step1dot').textContent = '✓';
+        document.getElementById('step1dot').className = 'step-dot done';
+        document.getElementById('step2dot').className = 'step-dot active';
+        document.getElementById('submittedUTR').textContent = utr;
+        startPolling();
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Confirm payment';
+        alert(data.error || 'Something went wrong. Please try again.');
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = 'Confirm payment';
+    }
+  }
+
+  function startPolling() {
+    if (!paymentId) return;
+    pollTimer = setInterval(async () => {
+      try {
+        const res = await fetch('/api/status?id=' + paymentId);
+        const data = await res.json();
+        if (data.status === 'confirmed') {
+          clearInterval(pollTimer);
+          document.getElementById('pollIndicator').classList.remove('active');
+          document.getElementById('step2dot').textContent = '✓';
+          document.getElementById('step2dot').className = 'step-dot done';
+          document.getElementById('step3dot').className = 'step-dot active';
+
+          setTimeout(() => {
+            document.getElementById('screen-submitted').style.display = 'none';
+            document.getElementById('screen-confirmed').style.display = 'flex';
+            if (redirect) setTimeout(() => window.location.href = redirect, 2000);
+          }, 600);
+        }
+      } catch (e) {}
+    }, 5000);
+  }
+
+  init();
+</script>
+</body>
+</html>
